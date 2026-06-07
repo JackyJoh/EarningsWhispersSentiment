@@ -73,6 +73,7 @@ export default function StrikeRecommendation(props: Props) {
   const hasPricing  = leapsAsk !== undefined && shortCallMid !== undefined;
   const showStrikes = !section || section === "strikes";
   const showPnL     = !section || section === "pnl";
+  const cycles      = strikes.leapsDTE !== undefined ? Math.floor(strikes.leapsDTE / 35) : null;
 
   return (
     <div>
@@ -144,15 +145,11 @@ export default function StrikeRecommendation(props: Props) {
                 ${breakeven!.toFixed(2)}
               </span>
               <span className="text-[10px] text-[#444]">raw · at LEAPS expiry</span>
-              {strikes.leapsDTE !== undefined && (() => {
-                const cycles = Math.floor(strikes.leapsDTE / 35);
-                const adj    = breakeven! - (monthlyIncome! * 0.75 * cycles) / 100;
-                return (
-                  <span className="text-[10px] text-[#00c853] mt-0.5">
-                    ${adj.toFixed(2)} after base premium
-                  </span>
-                );
-              })()}
+              {cycles !== null && (
+                <span className="text-[10px] text-[#00c853] mt-0.5">
+                  ${(breakeven! - (monthlyIncome! * 0.75 * cycles) / 100).toFixed(2)} after base premium
+                </span>
+              )}
             </div>
             <div className="flex flex-col">
               <span className="text-[#555] text-xs uppercase tracking-wider mb-0.5">Full Premium</span>
@@ -161,11 +158,11 @@ export default function StrikeRecommendation(props: Props) {
               </span>
               <span className="text-[10px] text-[#444]">30d short call at mid</span>
             </div>
-            {strikes.leapsDTE !== undefined && (
+            {cycles !== null && (
               <div className="flex flex-col">
                 <span className="text-[#555] text-xs uppercase tracking-wider mb-0.5">Cycles Available</span>
                 <span className="font-tnum font-bold text-sm text-[#aaa]">
-                  ~{Math.floor(strikes.leapsDTE / 35)} cycles
+                  ~{cycles} cycles
                 </span>
                 <span className="text-[10px] text-[#444]">{strikes.leapsDTE}d LEAPS ÷ 35d avg</span>
               </div>
@@ -182,6 +179,9 @@ export default function StrikeRecommendation(props: Props) {
               const income  = monthlyIncome! * fill;
               const payback = Math.ceil((netDebit! * 100) / income);
               const pct     = ((income / (netDebit! * 100)) * 100).toFixed(1);
+              const adjBE   = cycles !== null && breakeven !== undefined
+                ? breakeven - (income * cycles) / 100
+                : null;
               return (
                 <div key={label} className="flex flex-col min-w-[110px]">
                   <span className="text-xs uppercase tracking-wider mb-0.5" style={{ color }}>{label}</span>
@@ -190,6 +190,9 @@ export default function StrikeRecommendation(props: Props) {
                   </span>
                   <span className="text-[10px] text-[#555]">{pct}% of debit/cycle</span>
                   <span className="text-[10px] text-[#444]">payback in {payback} cycles</span>
+                  {adjBE !== null && (
+                    <span className="text-[10px] text-[#666] mt-0.5">BE → ${adjBE.toFixed(2)}</span>
+                  )}
                 </div>
               );
             })}
@@ -201,12 +204,10 @@ export default function StrikeRecommendation(props: Props) {
             </div>
           </div>
 
-          {strikes.leapsDTE !== undefined && (() => {
-            const cycles        = Math.floor(strikes.leapsDTE / 35);
+          {cycles !== null && (() => {
             const totalBase     = cycles * monthlyIncome! * 0.75;
             const cushionDollar = totalBase / 100;
             const cushionPct    = (cushionDollar / leapsAsk!) * 100;
-            const stockPctDrop  = (cushionDollar / stockPrice) * 100;
             return (
               <div className="tos-row px-4 py-3 flex items-start gap-3 border-t border-[#1a1a1a]">
                 <span className="text-[#ff9f00] text-sm mt-0.5">◆</span>
@@ -217,11 +218,7 @@ export default function StrikeRecommendation(props: Props) {
                     <span className="text-[#ff9f00] font-bold">${totalBase.toFixed(0)} total collected</span>
                     {" "}— LEAPS can drop{" "}
                     <span className="text-[#ff9f00] font-bold">${cushionDollar.toFixed(2)}</span>
-                    {" "}in option value ({cushionPct.toFixed(1)}% of ask) before you net-lose.{" "}
-                    <span className="text-[#555]">
-                      Underlying at <span className="text-[#aaa]">${stockPrice.toFixed(2)}</span>
-                      {" "}({stockPctDrop.toFixed(1)}% of current price).
-                    </span>
+                    {" "}in option value ({cushionPct.toFixed(1)}% of ask) before you net-lose.
                   </p>
                 </div>
               </div>
