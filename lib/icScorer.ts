@@ -24,7 +24,16 @@ export function scoreIC(
   const straddleAsPct = (sp / stockPrice) * 100;
   const f3 = straddleAsPct >= im;
 
-  const approved = f1 && f2 && f3;
+  // Pre-compute wing and premium so F4 can use them
+  const wing    = Math.round(stockPrice * 0.05);
+  const premium = straddlePrice !== undefined
+    ? (tradier.icNetCredit ?? straddlePrice / 2)
+    : 0;
+
+  const lossToProfit = premium > 0 ? (wing - premium) / premium : Infinity;
+  const f4 = straddlePrice !== undefined && premium > 0 && lossToProfit <= 4;
+
+  const approved = f1 && f2 && f3 && f4;
 
   const filters = [
     {
@@ -45,17 +54,20 @@ export function scoreIC(
       value: `${straddleAsPct.toFixed(1)}% vs ${im.toFixed(1)}% IM`,
       threshold: "≥ implied move",
     },
+    {
+      label: "Risk/Reward — Max Loss ≤ 4× Profit",
+      pass: f4,
+      value: straddlePrice !== undefined && premium > 0
+        ? `${lossToProfit.toFixed(1)}× loss/profit`
+        : "N/A",
+      threshold: "≤ 4× loss/profit",
+    },
   ];
 
   let strikes: ICStrikes | null = null;
   if (straddlePrice !== undefined) {
-    const price = stockPrice;
-    // Use actual OTM leg prices if available; ATM straddle/2 is a fallback only
-    const premium = tradier.icNetCredit ?? straddlePrice / 2;
-
-    const shortCall = Math.ceil(price * (1 + im / 100));
-    const shortPut  = Math.floor(price * (1 - im / 100));
-    const wing      = Math.round(price * 0.05);
+    const shortCall = Math.ceil(stockPrice * (1 + im / 100));
+    const shortPut  = Math.floor(stockPrice * (1 - im / 100));
     const longCall  = shortCall + wing;
     const longPut   = shortPut  - wing;
 
