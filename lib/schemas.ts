@@ -15,7 +15,7 @@ export const ICNewsletterSchema = z.object({
 });
 
 export const PostNewsletterSchema = ICNewsletterSchema.extend({
-  grade: z.enum(["A+", "A", "B", "C", "D", "F"]),
+  grade: z.string().nullable(),
   beat_miss: z.enum(["beat", "miss", "met"]),
   guidance_tone: z.enum(["raised", "lowered", "maintained"]).nullable(),
   // Pre-earnings fields — override as nullable since they're absent in post-only reports

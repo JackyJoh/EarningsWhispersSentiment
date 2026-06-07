@@ -43,7 +43,30 @@ For whisper_number and consensus_number extract the EPS values.`;
       return NextResponse.json({ error: "Failed to parse newsletter fields" }, { status: 422 });
     }
 
-    return NextResponse.json(response.parsed_output);
+    const output = response.parsed_output as Record<string, unknown>;
+
+    // Normalize grade to a canonical value — Claude may return "B+", "A-", etc.
+    if ("grade" in output && output.grade != null) {
+      const raw = String(output.grade).toUpperCase().trim();
+      const valid = ["A+", "A", "B", "C", "D", "F"] as const;
+      if ((valid as readonly string[]).includes(raw)) {
+        output.grade = raw;
+      } else if (raw.startsWith("A")) {
+        output.grade = raw.includes("+") ? "A+" : "A";
+      } else if (raw.startsWith("B")) {
+        output.grade = "B";
+      } else if (raw.startsWith("C")) {
+        output.grade = "C";
+      } else if (raw.startsWith("D")) {
+        output.grade = "D";
+      } else if (raw === "F") {
+        output.grade = "F";
+      } else {
+        output.grade = null;
+      }
+    }
+
+    return NextResponse.json(output);
   } catch (err: unknown) {
     console.error("/api/parse error:", err);
     const message = err instanceof Error ? err.message : "Unknown error";

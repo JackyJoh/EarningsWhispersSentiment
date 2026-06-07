@@ -15,7 +15,7 @@ export function scorePMCC(
 ): PMCCResult {
   const { stockPrice, dma200 } = tradier;
 
-  const f1 = post.grade === "A+" || post.grade === "A";
+  const f1 = post.grade !== null && (post.grade === "A+" || post.grade === "A");
   const f4 = dma200 !== undefined ? stockPrice > dma200 : false;
   const f5 =
     post.guidance_tone === "raised" || post.guidance_tone === "maintained";
@@ -36,7 +36,7 @@ export function scorePMCC(
     {
       label: "Post-Earnings Grade A or A+",
       pass: f1,
-      value: post.grade,
+      value: post.grade ?? "—",
       threshold: "A+ or A",
     },
     {

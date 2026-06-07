@@ -169,10 +169,12 @@ export default function ResultsPanel(props: Props) {
                     const post = parsed as ParsedNewsletterPost;
                     return (
                       <>
-                        <DataRow label="Grade"
-                          value={post.grade}
-                          valueColor={post.grade === "A+" || post.grade === "A" ? "#00c853" : post.grade === "B" ? "#ff9f00" : "#ff3d3d"}
-                        />
+                        {post.grade != null && (
+                          <DataRow label="Grade"
+                            value={post.grade}
+                            valueColor={post.grade === "A+" || post.grade === "A" ? "#00c853" : post.grade === "B" ? "#ff9f00" : "#ff3d3d"}
+                          />
+                        )}
                         <DataRow label="Beat / Miss"
                           value={post.beat_miss}
                           valueColor={post.beat_miss === "beat" ? "#00c853" : post.beat_miss === "miss" ? "#ff3d3d" : "#888"}
