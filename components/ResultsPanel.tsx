@@ -1,12 +1,18 @@
 "use client";
 
-import { useState } from "react";
 import type { ICResult, PMCCResult, ICStep, PMCCStep, ParsedNewsletter, ParsedNewsletterPost } from "@/lib/types";
 import ChecklistItem from "./ChecklistItem";
 import Verdict from "./Verdict";
 import StrikeRecommendation from "./StrikeRecommendation";
 
-type ICProps = {
+export type Tab = "analysis" | "positions";
+
+type Base = {
+  tab: Tab;
+  onTabChange: (t: Tab) => void;
+};
+
+type ICProps = Base & {
   mode: "ic";
   step: ICStep;
   result: ICResult | null;
@@ -15,7 +21,7 @@ type ICProps = {
   error: string | null;
 };
 
-type PMCCProps = {
+type PMCCProps = Base & {
   mode: "pmcc";
   step: PMCCStep;
   result: PMCCResult | null;
@@ -25,7 +31,6 @@ type PMCCProps = {
 };
 
 type Props = ICProps | PMCCProps;
-type Tab = "analysis" | "positions";
 
 const icSteps:   ICStep[]   = ["parsing", "fetching", "scoring"];
 const pmccSteps: PMCCStep[] = ["parsing", "sentiment", "fetching", "scoring"];
@@ -54,8 +59,7 @@ function DataRow({ label, value, valueColor }: { label: string; value: string; v
 }
 
 export default function ResultsPanel(props: Props) {
-  const [tab, setTab] = useState<Tab>("analysis");
-  const { step, result, parsed, stockPrice, error } = props;
+  const { tab, onTabChange, step, result, parsed, stockPrice, error } = props;
 
   if (step === "idle") {
     return (
@@ -109,12 +113,12 @@ export default function ResultsPanel(props: Props) {
       {/* Tabs — only when done */}
       {result && (
         <>
-          {/* Tab bar */}
-          <div className="flex border-b border-[#2a2a2a] mt-1">
+          {/* Tab bar — desktop only; mobile uses bottom nav */}
+          <div className="hidden md:flex border-b border-[#2a2a2a] mt-1">
             {TABS.map((t) => (
               <button
                 key={t.id}
-                onClick={() => setTab(t.id)}
+                onClick={() => onTabChange(t.id)}
                 className={`px-5 py-2.5 text-xs uppercase tracking-widest transition-colors ${
                   tab === t.id
                     ? "text-[#00b4ff] border-b-2 border-[#00b4ff] -mb-px"
