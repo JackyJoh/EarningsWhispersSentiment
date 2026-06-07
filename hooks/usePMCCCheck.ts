@@ -94,7 +94,7 @@ export function usePMCCCheck() {
       const tradierRes = await fetch("/api/tradier", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ticker: postData.ticker, need: ["quote", "dma200"] }),
+        body: JSON.stringify({ ticker: postData.ticker, need: ["quote", "dma200", "pmcc_prices"] }),
       });
       if (!tradierRes.ok) {
         const e = await tradierRes.json();

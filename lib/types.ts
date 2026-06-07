@@ -23,6 +23,9 @@ export interface TradierData {
   straddlePrice?: number;
   dma200?: number;
   icNetCredit?: number;
+  leapsAsk?: number;
+  shortCallMid?: number;
+  leapsDTE?: number;
 }
 
 export interface Sentiment {
@@ -69,6 +72,12 @@ export interface PMCCFilter {
 export interface PMCCStrikes {
   leapsStrike: number;
   shortCallStrike: number;
+  leapsAsk?: number;
+  shortCallMid?: number;
+  netDebit?: number;
+  breakeven?: number;
+  monthlyIncome?: number;
+  leapsDTE?: number;
 }
 
 export interface PMCCResult {

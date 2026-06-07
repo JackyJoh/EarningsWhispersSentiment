@@ -16,10 +16,11 @@ export function scorePMCC(
   const { stockPrice, dma200 } = tradier;
 
   const f1 = post.grade === "A+" || post.grade === "A";
-  const f2 = postSentiment.label === "positive" && postSentiment.score > 0.6;
   const f4 = dma200 !== undefined ? stockPrice > dma200 : false;
   const f5 =
     post.guidance_tone === "raised" || post.guidance_tone === "maintained";
+
+  const f2 = postSentiment.label === "positive" && postSentiment.score > 0.6;
 
   const f3Filter: PMCCFilter =
     preSentiment !== null
@@ -29,13 +30,7 @@ export function scorePMCC(
           value: preSentiment.label,
           threshold: "positive",
         }
-      : {
-          label: "Pre-Earnings Sentiment Positive",
-          pass: false,
-          na: true,
-          value: "—",
-          threshold: "No pre-earnings data",
-        };
+      : { label: "Pre-Earnings Sentiment Positive", pass: false, na: true, value: "—", threshold: "No pre-earnings data" };
 
   const filters: PMCCFilter[] = [
     {
@@ -80,14 +75,22 @@ export function scorePMCC(
   const verdict: PMCCVerdict =
     score >= strongThreshold ? "STRONG" : score >= weakThreshold ? "WEAK" : "AVOID";
 
-  const leapsStrike    = Math.floor(stockPrice * 0.85);
+  const leapsStrike     = Math.floor(stockPrice * 0.85);
   const shortCallStrike = Math.ceil(stockPrice * 1.06);
+
+  const leapsAsk      = tradier.leapsAsk;
+  const shortCallMid  = tradier.shortCallMid;
+  const leapsDTE      = tradier.leapsDTE;
+  const netDebit      = leapsAsk !== undefined && shortCallMid !== undefined
+    ? leapsAsk - shortCallMid : undefined;
+  const breakeven     = netDebit !== undefined ? leapsStrike + netDebit : undefined;
+  const monthlyIncome = shortCallMid !== undefined ? shortCallMid * 100 : undefined;
 
   return {
     verdict,
     score,
     activeFilters,
     filters,
-    strikes: { leapsStrike, shortCallStrike },
+    strikes: { leapsStrike, shortCallStrike, leapsAsk, shortCallMid, netDebit, breakeven, monthlyIncome, leapsDTE },
   };
 }

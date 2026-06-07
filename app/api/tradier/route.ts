@@ -119,11 +119,77 @@ async function getDMA200(ticker: string): Promise<number> {
   return avg;
 }
 
+async function getPMCCPrices(
+  ticker: string,
+  stockPrice: number
+): Promise<{ leapsAsk: number; shortCallMid: number; leapsDTE: number }> {
+  const leapsStrikeTarget     = Math.floor(stockPrice * 0.85);
+  const shortCallStrikeTarget = Math.ceil(stockPrice * 1.06);
+
+  const expUrl = `${BASE}/v1/markets/options/expirations?symbol=${encodeURIComponent(ticker)}&includeAllRoots=true`;
+  const expRes = await fetch(expUrl, { headers });
+  if (!expRes.ok) throw new Error(`Tradier expirations failed: ${expRes.status}`);
+  const expData = await expRes.json();
+  const expirations: string[] = expData?.expirations?.date ?? [];
+
+  const today = new Date();
+  const future = expirations.filter((d) => new Date(d) > today).sort();
+  if (!future.length) throw new Error(`No future expirations for ${ticker}`);
+
+  const ms = (d: string) => new Date(d).getTime();
+  const nowMs = today.getTime();
+
+  // Short call: closest expiry to 30 days out
+  const shortTarget = nowMs + 30 * 864e5;
+  const shortExpiry = future.reduce((a, b) =>
+    Math.abs(ms(a) - shortTarget) <= Math.abs(ms(b) - shortTarget) ? a : b
+  );
+
+  // LEAPS: 100-250 days out, targeting ~175 days (midpoint)
+  const leapsCandidates = future.filter((d) => {
+    const days = (ms(d) - nowMs) / 864e5;
+    return days >= 100 && days <= 250;
+  });
+  const leapsPool   = leapsCandidates.length > 0
+    ? leapsCandidates
+    : future.filter((d) => ms(d) - nowMs >= 100 * 864e5).length > 0
+      ? future.filter((d) => ms(d) - nowMs >= 100 * 864e5)
+      : future;
+  const leapsTarget = nowMs + 200 * 864e5;
+  const leapsExpiry = leapsPool.reduce((a, b) =>
+    Math.abs(ms(a) - leapsTarget) <= Math.abs(ms(b) - leapsTarget) ? a : b
+  );
+  const leapsDTE = Math.round((ms(leapsExpiry) - nowMs) / 864e5);
+
+  // Fetch both chains in parallel
+  const [shortRes, leapsRes] = await Promise.all([
+    fetch(`${BASE}/v1/markets/options/chains?symbol=${encodeURIComponent(ticker)}&expiration=${shortExpiry}&greeks=false`, { headers }),
+    fetch(`${BASE}/v1/markets/options/chains?symbol=${encodeURIComponent(ticker)}&expiration=${leapsExpiry}&greeks=false`, { headers }),
+  ]);
+  const [shortData, leapsData] = await Promise.all([shortRes.json(), leapsRes.json()]);
+
+  type Opt = { option_type: string; strike: number; bid: number; ask: number };
+  const shortOpts: Opt[] = shortData?.options?.option ?? [];
+  const leapsOpts: Opt[] = leapsData?.options?.option ?? [];
+
+  if (!shortOpts.length) throw new Error(`No short-term chain for ${ticker} ${shortExpiry}`);
+  if (!leapsOpts.length) throw new Error(`No LEAPS chain for ${ticker} ${leapsExpiry}`);
+
+  const shortCallOpt = findNearestOption(shortOpts, "call", shortCallStrikeTarget);
+  const leapsOpt     = findNearestOption(leapsOpts, "call", leapsStrikeTarget);
+
+  return {
+    leapsAsk:     leapsOpt.ask,
+    shortCallMid: (shortCallOpt.bid + shortCallOpt.ask) / 2,
+    leapsDTE,
+  };
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { ticker, need, impliedMovePct } = await req.json() as {
       ticker: string;
-      need: Array<"quote" | "straddle" | "dma200">;
+      need: Array<"quote" | "straddle" | "dma200" | "pmcc_prices">;
       impliedMovePct?: number;
     };
 
@@ -131,7 +197,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing ticker or need" }, { status: 400 });
     }
 
-    const result: { stockPrice?: number; straddlePrice?: number; dma200?: number; icNetCredit?: number } = {};
+    const result: {
+      stockPrice?: number; straddlePrice?: number; dma200?: number;
+      icNetCredit?: number; leapsAsk?: number; shortCallMid?: number; leapsDTE?: number;
+    } = {};
 
     if (need.includes("quote") || need.includes("straddle")) {
       result.stockPrice = await getQuote(ticker);
@@ -147,6 +216,13 @@ export async function POST(req: NextRequest) {
 
     if (need.includes("dma200")) {
       result.dma200 = await getDMA200(ticker);
+    }
+
+    if (need.includes("pmcc_prices") && result.stockPrice !== undefined) {
+      const prices = await getPMCCPrices(ticker, result.stockPrice);
+      result.leapsAsk     = prices.leapsAsk;
+      result.shortCallMid = prices.shortCallMid;
+      result.leapsDTE     = prices.leapsDTE;
     }
 
     return NextResponse.json(result);

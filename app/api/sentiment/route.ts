@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { Sentiment } from "@/lib/types";
 
-const HF_URL = "https://api-inference.huggingface.co/models/ProsusAI/finbert";
+// HuggingFace migrated inference to router.huggingface.co (api-inference.huggingface.co is defunct)
+const HF_URL = "https://router.huggingface.co/hf-inference/models/ProsusAI/finbert";
 const HF_KEY = process.env.HUGGINGFACE_API_KEY ?? "";
+
+// FinBERT hard limit is 512 tokens. At ~3 chars/token for financial text, 1400 chars ≈ 467 tokens — safe margin.
+function truncate(text: string, maxChars = 1400): string {
+  if (text.length <= maxChars) return text;
+  const cut = text.lastIndexOf(" ", maxChars);
+  return text.slice(0, cut > 0 ? cut : maxChars);
+}
 
 const labelMap: Record<string, "positive" | "negative" | "neutral"> = {
   positive: "positive", POSITIVE: "positive",
@@ -17,19 +25,17 @@ async function querySentiment(text: string): Promise<Sentiment> {
       Authorization: `Bearer ${HF_KEY}`,
       "Content-Type": "application/json",
     },
-    // wait_for_model: true — avoids 503 "model loading"; HF waits up to 60s instead of erroring
-    body: JSON.stringify({ inputs: text, options: { wait_for_model: true } }),
+    body: JSON.stringify({ inputs: truncate(text), options: { wait_for_model: true } }),
+    signal: AbortSignal.timeout(45000),
   });
 
   const body = await res.json();
 
-  // HuggingFace occasionally returns { error: "..." } with a 200 status
   if (!res.ok || (body && typeof body === "object" && !Array.isArray(body) && "error" in body)) {
     const msg = (body as { error?: string }).error ?? `HTTP ${res.status}`;
     throw new Error(`FinBERT: ${msg}`);
   }
 
-  // Response is [[{label, score}, ...]] or [{label, score}, ...]
   const results: Array<{ label: string; score: number }> = Array.isArray(body[0])
     ? body[0]
     : body;
@@ -51,7 +57,6 @@ export async function POST(req: NextRequest) {
     if (!text) {
       return NextResponse.json({ error: "Missing text" }, { status: 400 });
     }
-
     const sentiment = await querySentiment(text);
     return NextResponse.json(sentiment);
   } catch (err: unknown) {
