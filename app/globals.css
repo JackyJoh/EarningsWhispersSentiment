@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+@theme {
+  --color-tos-black:    #0a0a0a;
+  --color-tos-panel:    #141414;
+  --color-tos-surface:  #1a1a1a;
+  --color-tos-row:      #1e1e1e;
+  --color-tos-border:   #2a2a2a;
+  --color-tos-blue:     #00b4ff;
+  --color-tos-blue-dim: #0099e6;
+  --color-tos-green:    #00c853;
+  --color-tos-red:      #ff3d3d;
+  --color-tos-amber:    #ff9f00;
+
+  --font-heading: var(--font-heading), "IBM Plex Mono", ui-monospace, monospace;
+  --font-sans:    var(--font-inter), "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  --background: #0a0a0a;
+  --foreground: #ffffff;
+}
+
+html, body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), "Inter", ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+}
+
+.font-heading {
+  font-family: var(--font-heading), "IBM Plex Mono", ui-monospace, monospace;
+}
+
+.font-tnum {
+  font-feature-settings: "tnum";
+}
+
+/* TOS section header bar */
+.tos-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px;
+  background: #141414;
+  border-bottom: 1px solid #2a2a2a;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* TOS alternating table rows */
+.tos-row {
+  border-bottom: 1px solid #2a2a2a;
+  transition: background-color 100ms ease;
+}
+.tos-row:nth-child(even) { background: #1a1a1a; }
+.tos-row:nth-child(odd)  { background: #1e1e1e; }
+.tos-row:hover           { background: #252525; }
+
+/* TOS sub-section divider label */
+.tos-sublabel {
+  padding: 5px 16px;
+  background: #111;
+  border-bottom: 1px solid #2a2a2a;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #555;
+}
