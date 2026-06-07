@@ -172,7 +172,7 @@ export default function ResultsPanel(props: Props) {
                         {post.grade != null && (
                           <DataRow label="Grade"
                             value={post.grade}
-                            valueColor={post.grade === "A+" || post.grade === "A" ? "#00c853" : post.grade === "B" ? "#ff9f00" : "#ff3d3d"}
+                            valueColor={post.grade === "A+" || post.grade === "A" || post.grade === "A-" ? "#00c853" : post.grade === "B" ? "#ff9f00" : "#ff3d3d"}
                           />
                         )}
                         <DataRow label="Beat / Miss"

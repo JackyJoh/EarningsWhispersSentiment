@@ -13,7 +13,7 @@ export interface ParsedNewsletter {
 }
 
 export interface ParsedNewsletterPost extends ParsedNewsletter {
-  grade: "A+" | "A" | "B" | "C" | "D" | "F" | null;
+  grade: "A+" | "A" | "A-" | "B" | "C" | "D" | "F" | null;
   beat_miss: "beat" | "miss" | "met";
   guidance_tone: "raised" | "lowered" | "maintained" | null;
 }

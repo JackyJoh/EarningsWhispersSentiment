@@ -9,9 +9,9 @@ export default function ChecklistItem({ item }: Props) {
     <div className="tos-row flex items-center gap-4 px-4 py-3">
       <div
         className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-          isNA         ? "bg-[#333]"    :
-          item.pass    ? "bg-[#00c853]" :
-                         "bg-[#ff3d3d]"
+          isNA      ? "bg-[#333]"    :
+          item.pass ? "bg-[#00c853]" :
+                      "bg-[#ff3d3d]"
         }`}
       />
       <span className={`flex-1 text-sm ${isNA ? "text-[#444]" : "text-[#ccc]"}`}>

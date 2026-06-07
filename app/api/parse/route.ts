@@ -52,7 +52,7 @@ For whisper_number and consensus_number extract the EPS values.`;
       if ((valid as readonly string[]).includes(raw)) {
         output.grade = raw;
       } else if (raw.startsWith("A")) {
-        output.grade = raw.includes("+") ? "A+" : "A";
+        output.grade = raw.includes("+") ? "A+" : raw.includes("-") ? "A-" : "A";
       } else if (raw.startsWith("B")) {
         output.grade = "B";
       } else if (raw.startsWith("C")) {
