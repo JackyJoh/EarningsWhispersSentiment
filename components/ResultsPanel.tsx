@@ -54,7 +54,7 @@ function DataRow({ label, value, valueColor }: { label: string; value: string; v
 }
 
 export default function ResultsPanel(props: Props) {
-  const [tab, setTab] = useState<Tab>("overview");
+  const [tab, setTab] = useState<Tab>("analysis");
   const { step, result, parsed, stockPrice, error } = props;
 
   if (step === "idle") {
